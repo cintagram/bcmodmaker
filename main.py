@@ -229,7 +229,8 @@ def select_files(title, file_types, single=True, default=""):
 class WindowClass2(QMainWindow, form_class) :
     def __init__(self) :
         listfile1 = pd.read_csv(io.StringIO(requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/apklist.csv").text), sep = ",", encoding = "utf-8")
-        listfile = listfile1["name"]
+        listfile = listfile1.loc[listfile1["apptype"] == "ipa", "name"].values
+        listfile2 = listfile1.loc[listfile1["apptype"] == "apk", "name"].values
         super().__init__()
         self.setupUi(self)
         self.setWindowIcon(QIcon('icon.png'))
@@ -238,19 +239,28 @@ class WindowClass2(QMainWindow, form_class) :
         for i in range(len(listfile)):
             self.ipaselector.addItem("{}".format(listfile[i]))
             i += 1
+        j = 0
+        for j in range(len(listfile2)):
+            self.apkselector.addItem("{}".format(listfile2[j]))
+            j += 1
         self.ipadecompilebtn.clicked.connect(self.extract_ipa)
         self.decompilebtn.clicked.connect(self.decrypt_pack_ui)
         
         current_version = "1.0 beta"
-        server_version = requests.get("").text
-        message = requests.get("").text
+        server_version = requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/version.txt").text
+        message = requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/message.txt").text
         print(server_version)
-        if not current_version == server_version:
+        if not current_version in server_version:
             QMessageBox.warning(self, 'New Update', '업데이트 알림\n{}'.format(message),
                                         QMessageBox.Ok)
             sys.exit(1)
-        else:
-            pass
+        elif current_version == server_version:
+            if message == 'None':
+                pass
+            else:
+                QMessageBox.information(self, '개발자의 메시지', '개발자의 메시지\n\n{}'.format(message),
+                                            QMessageBox.Ok)
+        
         
     
     def download_ipa(self):
@@ -267,7 +277,7 @@ class WindowClass2(QMainWindow, form_class) :
         response = requests.get(ipa_url)
         file = open("jp.co.ponos.battlecats{}_{}.ipa".format(country, version), "wb").write(response.content)
         self.progressBar.setValue(100)
-        QMessageBox.information(self, '성공', '다운로드에 성공하였습니다.',
+        QMessageBox.information(self, '성공', '다운로드에 성공하였습니다.\n[jp.co.ponos.battlecats{}_{}.ipa]'.format(country, version),
                                     QMessageBox.Ok)
         self.progressBar.setValue(0)
 
@@ -281,15 +291,41 @@ class WindowClass2(QMainWindow, form_class) :
             fantasy_zip.extractall()
             fantasy_zip.close()
             self.progressBar.setValue(100)
-            QMessageBox.information(self, '성공', '다음 폴더에 압축을 풀었습니다: [Payload]\n[Payload\\battlecats.app\\] 폴더를 확인해주세요.',
+            QMessageBox.information(self, '성공', '다음 폴더에 압축을 풀었습니다: [Payload]\n[Payload\\] 폴더를 확인해주세요.',
                                         QMessageBox.Ok)
             self.progressBar.setValue(0)
         
     def download_apk(self):
-        pass
+        selected = str(self.apkselector.currentText())
+        print(selected)
+        QMessageBox.information(self, '다운로드 시작하기', '다운로드를 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
+                                    QMessageBox.Ok)
+        self.progressBar.setValue(20)
+        
+        df = pd.read_csv(io.StringIO(requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/apklist.csv").text), sep = ",", encoding = "utf-8")
+        country = df.loc[df["name"] == selected, "country"].values[0]
+        version = df.loc[df["name"] == selected, "version"].values[0]
+        apk_url = df.loc[df["name"] == str(selected), "link"].values[0]
+        response = requests.get(apk_url)
+        file = open("jp.co.ponos.battlecats{}_{}.apk".format(country, version), "wb").write(response.content)
+        self.progressBar.setValue(100)
+        QMessageBox.information(self, '성공', '다운로드에 성공하였습니다.\n[jp.co.ponos.battlecats{}_{}.apk]'.format(country, version),
+                                    QMessageBox.Ok)
+        self.progressBar.setValue(0)
 
     def extract_apk(self):
-        pass
+        pack_paths = select_files(".apk 파일을 선택해주세요.", [(".apk", "*.apk")], False)
+        if pack_paths:
+            self.progressBar.setValue(45)
+            p = Path(pack_paths[0])
+            fantasy_zip = zipfile.ZipFile(p)
+            self.progressBar.setValue(70)
+            fantasy_zip.extractall()
+            fantasy_zip.close()
+            self.progressBar.setValue(100)
+            QMessageBox.information(self, '성공', '현재 폴더에 압축을 풀었습니다',
+                                        QMessageBox.Ok)
+            self.progressBar.setValue(0)
 
     def decrypt_pack_ui(self):
         country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
