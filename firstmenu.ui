@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>968</width>
-    <height>546</height>
+    <width>793</width>
+    <height>673</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,12 +19,12 @@
      <rect>
       <x>0</x>
       <y>10</y>
-      <width>961</width>
+      <width>791</width>
       <height>121</height>
      </rect>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;냥코대전쟁 게임 모더 1.0&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Dev: CintagramABP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;냥코대전쟁 게임 모더 1.0&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Dev: CintagramABP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="groupBox">
@@ -33,7 +33,7 @@
       <x>50</x>
       <y>140</y>
       <width>691</width>
-      <height>101</height>
+      <height>111</height>
      </rect>
     </property>
     <property name="title">
@@ -43,9 +43,9 @@
      <property name="geometry">
       <rect>
        <x>580</x>
-       <y>40</y>
-       <width>75</width>
-       <height>23</height>
+       <y>30</y>
+       <width>91</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
@@ -56,20 +56,46 @@
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>40</y>
+       <y>50</y>
        <width>531</width>
-       <height>21</height>
+       <height>41</height>
       </rect>
      </property>
     </widget>
+    <widget class="QPushButton" name="apkdecompilebtm">
+     <property name="geometry">
+      <rect>
+       <x>580</x>
+       <y>62</y>
+       <width>91</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>파일 추출</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>15</y>
+       <width>301</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>게임 선택</string>
+     </property>
+    </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_2">
+   <widget class="QGroupBox" name="ipa">
     <property name="geometry">
      <rect>
       <x>50</x>
       <y>270</y>
       <width>691</width>
-      <height>101</height>
+      <height>111</height>
      </rect>
     </property>
     <property name="title">
@@ -79,9 +105,9 @@
      <property name="geometry">
       <rect>
        <x>580</x>
-       <y>40</y>
-       <width>75</width>
-       <height>23</height>
+       <y>30</y>
+       <width>91</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
@@ -92,10 +118,36 @@
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>40</y>
+       <y>50</y>
        <width>531</width>
-       <height>22</height>
+       <height>41</height>
       </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="ipadecompilebtn">
+     <property name="geometry">
+      <rect>
+       <x>580</x>
+       <y>62</y>
+       <width>91</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>파일 추출</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>15</y>
+       <width>181</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>게임 선택</string>
      </property>
     </widget>
    </widget>
@@ -117,7 +169,7 @@
        <x>70</x>
        <y>30</y>
        <width>211</width>
-       <height>23</height>
+       <height>41</height>
       </rect>
      </property>
      <property name="text">
@@ -130,7 +182,7 @@
        <x>370</x>
        <y>30</y>
        <width>211</width>
-       <height>23</height>
+       <height>41</height>
       </rect>
      </property>
      <property name="text">
@@ -142,7 +194,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>510</y>
+      <y>630</y>
       <width>691</width>
       <height>23</height>
      </rect>
@@ -154,41 +206,44 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QScrollArea" name="scrollArea">
+   <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>760</x>
-      <y>150</y>
-      <width>191</width>
-      <height>331</height>
+      <x>50</x>
+      <y>500</y>
+      <width>691</width>
+      <height>91</height>
      </rect>
     </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
+    <property name="title">
+     <string>IPA 제작 / APK 제작</string>
     </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
+    <widget class="QPushButton" name="pushButton">
      <property name="geometry">
       <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>189</width>
-       <height>329</height>
+       <x>70</x>
+       <y>40</y>
+       <width>211</width>
+       <height>41</height>
       </rect>
      </property>
+     <property name="text">
+      <string>IPA 제작 (아이폰 / 아이패드)</string>
+     </property>
     </widget>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>800</x>
-      <y>130</y>
-      <width>111</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;로그 기록&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
+    <widget class="QPushButton" name="pushButton_2">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>40</y>
+       <width>211</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>APK 제작 (안드로이드)</string>
+     </property>
+    </widget>
    </widget>
   </widget>
  </widget>
