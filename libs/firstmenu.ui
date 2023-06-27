@@ -218,7 +218,7 @@
     <property name="title">
      <string>IPA 제작 / APK 제작</string>
     </property>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="makeipa">
      <property name="geometry">
       <rect>
        <x>70</x>
@@ -231,7 +231,7 @@
       <string>IPA 제작 (아이폰 / 아이패드)</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="makeapk">
      <property name="geometry">
       <rect>
        <x>370</x>

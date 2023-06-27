@@ -10,6 +10,7 @@ import os
 import traceback
 from threading import Thread
 import shutil
+import time
 import hashlib
 import pandas as pd
 from pathlib import Path
@@ -29,6 +30,25 @@ import math
 output_path = "game_files"
 lists_paths = "decrypted_lists"
 form_class = uic.loadUiType("libs\\firstmenu.ui")[0]
+
+def zip_folder(folder_path, zip_path):
+    # Create a ZIP file object
+    zipf = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
+
+    # Iterate over all the files and folders in the specified folder
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            # Get the full path of the file
+            file_path = os.path.join(root, file)
+            
+            # Calculate the relative path inside the ZIP file
+            relative_path = os.path.relpath(file_path, folder_path)
+            
+            # Add the file to the ZIP file with its relative path
+            zipf.write(file_path, relative_path)
+
+    # Close the ZIP file
+    zipf.close()
 
 def insert_list(main, list, index):
     for i in range(len(list)):
@@ -299,6 +319,8 @@ class WindowClass2(QMainWindow, form_class) :
         self.setWindowIcon(QIcon('icon.png'))
         self.ipadownloadbtn.clicked.connect(self.download_ipa)
         self.apkdownloadbtn.clicked.connect(self.download_apk)
+        self.makeipa.clicked.connect(self.make_ipa)
+        self.makeapk.clicked.connect(self.make_apk)
         i = 0
         for i in range(len(listfile)):
             self.ipaselector.addItem("{}".format(listfile[i]))
@@ -466,22 +488,29 @@ class WindowClass2(QMainWindow, form_class) :
                                     QMessageBox.Ok)
             game_files_dir = select_dir("Select a folder of game files", initial_dir)
             if game_files_dir:
+                QMessageBox.warning(self, '실행 전 알림', '이 작업은 6000개 가량의 파일을 작업하기 때문에 다음과 같은 현상들이 발생 할 수 있습니다.\n\n- 시간 오래걸림\n- 프로그램이 응답없음 상태로 변함\n\n확인을 누르면 시작합니다.',
+                                    QMessageBox.Ok)
                 if not os.path.exists(downloadlocal):
                     os.makedirs(datalocal)
                 files = os.listdir(datalocal)
-                for file in files:
-                    source_file = os.path.join(datalocal, file)
-                    destination_file = os.path.join(downloadlocal, file)
-                    shutil.copy2(source_file, destination_file)
-                    self.add_text("Copying files... ({}/{})".format(file, files))
+                def copy():
+                    for file in files:
+                        source_file = os.path.join(datalocal, file)
+                        destination_file = os.path.join(downloadlocal, file)
+                        shutil.copy2(source_file, destination_file)
+                        #self.add_text("Copying files... ({}/{})".format(file, files))
+                copythread = Thread(target=copy)
+                copythread.start()
+                copythread.join()
                 self.add_text("Copied all files from DataLocal to DownloadLocal folder.")
                 self.progressBar.setValue(20)
-                QMessageBox.information(self, '컴파일 시작하기', '컴파일을 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
+                QMessageBox.information(self, 'PACK 컴파일 시작하기', 'PACK 컴파일을 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
                                     QMessageBox.Ok)
                 if country_code == "jp":
                     jp = "y"
                 else:
                     jp = "n"
+                
                 name = "DownloadLocal"
                 check_and_create_dir(output_path)
                 list_data = create_list_encrypt(game_files_dir)
@@ -500,16 +529,61 @@ class WindowClass2(QMainWindow, form_class) :
                 write_file_b(pk_output, bytes(pack_data))
                 self.add_text("Completed Encryption.")
                 self.progressBar.setValue(100)
-                QMessageBox.information(self, '성공', '다음 파일들을 모두 디컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [encrypted_files]'.format(game_files_dir),
+                QMessageBox.information(self, '성공', '다음 파일들을 모두 컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [encrypted_files]'.format(game_files_dir),
                                     QMessageBox.Ok)
                 self.progressBar.setValue(0)
         
-
     def make_ipa(self):
-        pass
+        initial_dir = ""
+        country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
+        
+        if ok:
+            if country_code == "jp":
+                county_code = ""
+            pack_paths = select_dir("Payload 폴더를 선택해주세요.", initial_dir)
+            if pack_paths:
+                source_file1 = 'encrypted_files\\DownloadLocal.list'
+                source_file2 = 'encrypted_files\\DownloadLocal.pack'
+                destination_directory = os.path.join(pack_paths, "battlecats{}.app\\".format(country_code))
+                shutil.copy(source_file1, destination_directory)
+                shutil.copy(source_file2, destination_directory)
+                self.add_text("Preparing Zip...")
+                self.progressBar.setValue(45)
+                folder_path = destination_directory
+                zip_path = 'jp.co.ponos.battlecats{}_MOD_Pulservice.ipa'.format(country_code)
+                self.add_text("Compressing and Converting...")
+                zip_folder(folder_path, zip_path)
+                self.add_text("Completed Compression.")
+                self.progressBar.setValue(100)
+                QMessageBox.information(self, '성공', '현재 폴더에 앱 파일을 생성하였습니다.\n\n{}'.format(zip_path),
+                                            QMessageBox.Ok)
+                self.progressBar.setValue(0)
 
     def make_apk(self):
-        pass
+        initial_dir = ""
+        country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
+        
+        if ok:
+            if country_code == "jp":
+                county_code = ""
+            pack_paths = select_dir("apk-extracted 폴더를 선택해주세요.", initial_dir)
+            if pack_paths:
+                source_file1 = 'encrypted_files\\DownloadLocal.list'
+                source_file2 = 'encrypted_files\\DownloadLocal.pack'
+                destination_directory = os.path.join(pack_paths, "assets\\")
+                shutil.copy(source_file1, destination_directory)
+                shutil.copy(source_file2, destination_directory)
+                self.add_text("Preparing Zip...")
+                self.progressBar.setValue(45)
+                folder_path = destination_directory
+                zip_path = 'jp.co.ponos.battlecats{}_MOD_Pulservice.apk'.format(country_code)
+                self.add_text("Compressing and Converting...")
+                zip_folder(folder_path, zip_path)
+                self.add_text("Completed Compression.")
+                self.progressBar.setValue(100)
+                QMessageBox.information(self, '성공', '현재 폴더에 앱 파일을 생성하였습니다.\n\n{}'.format(zip_path),
+                                            QMessageBox.Ok)
+                self.progressBar.setValue(0)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv) 
