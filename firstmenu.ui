@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>793</width>
-    <height>673</height>
+    <width>792</width>
+    <height>821</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QPushButton" name="apkdecompilebtm">
+    <widget class="QPushButton" name="apkdecompilebtn">
      <property name="geometry">
       <rect>
        <x>580</x>
@@ -244,6 +244,32 @@
       <string>APK 제작 (안드로이드)</string>
      </property>
     </widget>
+   </widget>
+   <widget class="QPlainTextEdit" name="logbox">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>690</y>
+      <width>651</width>
+      <height>111</height>
+     </rect>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>49</x>
+      <y>659</y>
+      <width>651</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;로그 &amp;amp; 진행상황&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
    </widget>
   </widget>
  </widget>
