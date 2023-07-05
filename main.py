@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QListWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5 import uic
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QDesktopServices
 import datetime
 import requests
 import glob
@@ -30,6 +30,7 @@ import math
 output_path = "game_files"
 lists_paths = "decrypted_lists"
 form_class = uic.loadUiType("libs\\firstmenu.ui")[0]
+form_class2 = uic.loadUiType("libs\\uniteditdialog.ui")[0]
 
 def zip_folder(folder_path, zip_path):
     # Create a ZIP file object
@@ -309,14 +310,64 @@ def select_files(title, file_types, single=True, default=""):
         path = fd.askopenfilenames(title=title, filetypes=file_types, initialdir=default)
     return path
 
-class WindowClass2(QMainWindow, form_class) :
+class WindowClass(QMainWindow, form_class2) :
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.setWindowIcon(QIcon('libs\\icon.png'))
+        self.findunitid.clicked.connect(self.FindUnitSite)
+        self.unitloadbtn.clicked.connect(self.UnitLoad)
+        self.gachapercenthelp.clicked.connect(self.GachaPercentHelpConnect)
+        self.applybutton.clicked.connect(self.ApplySettingsConnect)
+
+    def FindUnitSite(self):
+        url = QUrl("https://battle-cats.fandom.com/wiki/Cat_Release_Order")
+        QDesktopServices.openUrl(url)
+
+    def ApplySettingsConnect(self):
+        reply = QMessageBox.question(self, '변경사항 적용', '변경사항을 모두 적용하시겠습니까?\n게임 손상 / 또는 법적 조치에 대해 책임지지 않습니다.',
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        result = str(int(self.unitnumline.text()) + 1).zfill(3)
+        df = pd.read_csv("game_files\\DataLocal\\unit{}.csv".format(result), sep = ",", encoding = "utf-8", header=None)
+        df.iloc[0, 0] = int(str(self.healthinput.text()))
+        df.iloc[0, 1] = int(str(self.knockbackinput.text()))
+        df.iloc[0, 2] = int(str(self.movespeedinput.text()))
+        df.iloc[0, 3] = int(str(self.attackpowerinput.text()))
+        df.iloc[0, 4] = int(str(self.attackcooltimeinput.text()))
+        df.iloc[0, 6] = int(str(self.gocostinput.text()))
+        
+        df.to_csv("game_files\\DataLocal\\unit{}.csv".format(result), index=False, header=None)
+        QMessageBox.information(self, '성공', '성공적으로 CSV 파일에 적용하였습니다. 변경된 파일의 이름은 다음과 같습니다.\n컴파일시 필요하니 메모해주세요.\n\n[game_files\\DataLocal\\unit{}.csv]'.format(result),
+                                        QMessageBox.Ok)
+
+
+    def UnitLoad(self):
+        result = str(int(self.unitnumline.text()) + 1).zfill(3)
+        df = pd.read_csv("game_files\\DataLocal\\unit{}.csv".format(result), sep = ",", encoding = "utf-8", header=None)
+        self.healthinput.setText(str(int(df.iloc[0, 0])))
+        self.knockbackinput.setText(str(int(df.iloc[0, 1])))
+        self.movespeedinput.setText(str(int(df.iloc[0, 2])))
+        self.attackpowerinput.setText(str(int(df.iloc[0, 3])))
+        self.attackcooltimeinput.setText(str(int(df.iloc[0, 4])))
+        self.gocostinput.setText(str(int(df.iloc[0, 6])))
+
+
+
+    def GachaPercentHelpConnect(self):
+        QMessageBox.information(self, '도움말', '이 설정값은 레어등급별 뽑기확률을 설정합니다.\n\n0: 뽑기에서 출현하지 않음\n1: 레어 확률로 출현\n2: 슈퍼 레어 확률로 출현\n3: 울슈레 확률로 출현\n4: 레전드 레어 확률로 출현',
+                                        QMessageBox.Ok)
+    
+
+
+
+class WindowClass2(QMainWindow, form_class):
     def __init__(self) :
         listfile1 = pd.read_csv(io.StringIO(requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/apklist.csv").text), sep = ",", encoding = "utf-8")
         listfile = listfile1.loc[listfile1["apptype"] == "ipa", "name"].values
         listfile2 = listfile1.loc[listfile1["apptype"] == "apk", "name"].values
         super().__init__()
         self.setupUi(self)
-        self.setWindowIcon(QIcon('icon.png'))
+        self.setWindowIcon(QIcon('libs\\icon.png'))
         self.ipadownloadbtn.clicked.connect(self.download_ipa)
         self.apkdownloadbtn.clicked.connect(self.download_apk)
         self.makeipa.clicked.connect(self.make_ipa)
@@ -333,6 +384,17 @@ class WindowClass2(QMainWindow, form_class) :
         self.apkdecompilebtn.clicked.connect(self.extract_apk)
         self.decompilebtn.clicked.connect(self.decrypt_pack_ui)
         self.compilebtn.clicked.connect(self.encrypt_pack_ui)
+        self.catseditorbtn.clicked.connect(self.CatsEditorConnect)
+        if not os.path.exists("game_files\\DataLocal"):
+            self.catseditorbtn.setDisabled(True)
+            self.enemyeditorbtn.setDisabled(True)
+            self.stageeditorbtn.setDisabled(True)
+            self.otherseditorbtn.setDisabled(True)
+        else:
+            self.catseditorbtn.setDisabled(False)
+            self.enemyeditorbtn.setDisabled(True)
+            self.stageeditorbtn.setDisabled(True)
+            self.otherseditorbtn.setDisabled(True)
         
         current_version = "1.0 beta"
         server_version = requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/version.txt").text
@@ -344,6 +406,8 @@ class WindowClass2(QMainWindow, form_class) :
             sys.exit(1)
         elif current_version == server_version:
             if message == 'None':
+                QMessageBox.information(self, '주의!', '이버전은 베타버전이므로, 제대로 적용되지 않거나 버그가 있을 수 있습니다.',
+                                            QMessageBox.Ok)
                 pass
             else:
                 QMessageBox.information(self, '개발자의 메시지', '개발자의 메시지\n\n{}'.format(message),
@@ -388,7 +452,7 @@ class WindowClass2(QMainWindow, form_class) :
             self.progressBar.setValue(100)
             QMessageBox.information(self, '성공', '다음 폴더에 압축을 풀었습니다: [Payload]\n[Payload\\] 폴더를 확인해주세요.',
                                         QMessageBox.Ok)
-            self.progressBar.setValue(0)
+            
         
     def download_apk(self):
         selected = str(self.apkselector.currentText())
@@ -412,32 +476,15 @@ class WindowClass2(QMainWindow, form_class) :
         self.progressBar.setValue(0)
 
     def extract_apk(self):
-        pack_paths = select_files(".apk 파일을 선택해주세요.", [(".apk", "*.apk")], False)
-        if pack_paths:
-            self.add_text("Preparing extraction...")
-            try:
-                os.mkdir("apk-extracted")
-            except FileExistsError:
-                pass
-            self.progressBar.setValue(45)
-            p = Path(pack_paths[0])
-            fantasy_zip = zipfile.ZipFile(p)
-            self.progressBar.setValue(70)
-            self.add_text("Extracting...")
-            fantasy_zip.extractall("apk-extracted")
-            fantasy_zip.close()
-            self.add_text("Completed Extraction.")
-            self.progressBar.setValue(100)
-            QMessageBox.information(self, '성공', '다음 폴더에 압축을 풀었습니다: [apk-extracted\\]',
+        QMessageBox.information(self, '안내', '동봉된 툴인 APKToolGUI를 실행하여, Decompile 버튼 옆 ... 버튼을 눌러 APK를 선택 후, 디컴파일해주세요.',
                                         QMessageBox.Ok)
-            self.progressBar.setValue(0)
 
     def decrypt_pack_ui(self):
         self.add_text("Initialized directories.")
         country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
         if ok:
             self.add_text("Country: {}".format(country_code))
-            QMessageBox.information(self, '파일 선택 가이드', '파일 선택 창이 뜨면 다음 2개의 파일들을 반드시 선택해주세요.\n\nDataLocal.pack\nDownloadLocal.pack',
+            QMessageBox.information(self, '파일 선택 가이드', '파일 선택 창이 뜨면 다음 2개의 파일들을 반드시 선택해주세요. 나머지는 선택입니다.\n\nDataLocal.pack\nDownloadLocal.pack',
                                     QMessageBox.Ok)
             pack_paths = select_files(".pack 파일을 선택해주세요.", [(".pack", "*.pack")], False)
             if pack_paths:
@@ -474,6 +521,16 @@ class WindowClass2(QMainWindow, form_class) :
                 QMessageBox.information(self, '디컴파일 성공', '다음 파일들을 모두 디컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [game_files]'.format(pack_paths),
                                     QMessageBox.Ok)
                 self.progressBar.setValue(0)
+                if not os.path.exists("game_files\\DataLocal"):
+                    self.catseditorbtn.setDisabled(True)
+                    self.enemyeditorbtn.setDisabled(True)
+                    self.stageeditorbtn.setDisabled(True)
+                    self.otherseditorbtn.setDisabled(True)
+                else:
+                    self.catseditorbtn.setDisabled(False)
+                    self.enemyeditorbtn.setDisabled(True)
+                    self.stageeditorbtn.setDisabled(True)
+                    self.otherseditorbtn.setDisabled(True)
 
     def encrypt_pack_ui(self):
         initial_dir = "game_files"
@@ -483,55 +540,44 @@ class WindowClass2(QMainWindow, form_class) :
         self.add_text("Initialized directories.")
         country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
         if ok:
-            self.add_text("Country: {}".format(country_code))
-            QMessageBox.information(self, '파일 선택 가이드', '파일 선택 창이 뜨면 다음 2개의 파일들을 반드시 선택해주세요.\n\nDownloadLocal.pack',
-                                    QMessageBox.Ok)
-            game_files_dir = select_dir("Select a folder of game files", initial_dir)
-            if game_files_dir:
-                QMessageBox.warning(self, '실행 전 알림', '이 작업은 6000개 가량의 파일을 작업하기 때문에 다음과 같은 현상들이 발생 할 수 있습니다.\n\n- 시간 오래걸림\n- 프로그램이 응답없음 상태로 변함\n\n확인을 누르면 시작합니다.',
-                                    QMessageBox.Ok)
-                if not os.path.exists(downloadlocal):
-                    os.makedirs(datalocal)
-                files = os.listdir(datalocal)
-                def copy():
-                    for file in files:
-                        source_file = os.path.join(datalocal, file)
-                        destination_file = os.path.join(downloadlocal, file)
-                        shutil.copy2(source_file, destination_file)
-                        #self.add_text("Copying files... ({}/{})".format(file, files))
-                copythread = Thread(target=copy)
-                copythread.start()
-                copythread.join()
-                self.add_text("Copied all files from DataLocal to DownloadLocal folder.")
-                self.progressBar.setValue(20)
-                QMessageBox.information(self, 'PACK 컴파일 시작하기', 'PACK 컴파일을 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
-                                    QMessageBox.Ok)
-                if country_code == "jp":
-                    jp = "y"
-                else:
-                    jp = "n"
-                
-                name = "DownloadLocal"
-                check_and_create_dir(output_path)
-                list_data = create_list_encrypt(game_files_dir)
-                self.progressBar.setValue(47)
-                self.add_text("Creating encryption list...")
-                list_data_full = add_extra_bytes(None, False, list_data.encode("utf-8"))
-                self.add_text("Adding extra bytes...")
-                self.progressBar.setValue(60)
-                encrypted_data_list = encrypt_list(list_data_full)
-                ls_output = os.path.join(output_path, name + ".list")
-                write_file_b(ls_output, encrypted_data_list)
-                self.add_text("Writing bytes..")
-                self.progressBar.setValue(71)
-                pack_data = create_pack(game_files_dir, list_data, jp, name, country_code)
-                pk_output = os.path.join(output_path, name + ".pack")
-                write_file_b(pk_output, bytes(pack_data))
-                self.add_text("Completed Encryption.")
-                self.progressBar.setValue(100)
-                QMessageBox.information(self, '성공', '다음 파일들을 모두 컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [encrypted_files]'.format(game_files_dir),
-                                    QMessageBox.Ok)
-                self.progressBar.setValue(0)
+            name, ok = QInputDialog.getText(self, '폴더 이름 입력', '컴파일될 파일의 이름 (폴더의 이름)을 입력해주세요.\n\n예시: DownloadLocal / DataLocal')
+            if ok:
+                self.add_text("Country: {}".format(country_code))
+                QMessageBox.information(self, '파일 선택 가이드', '파일 선택 창이 뜨면 다음 2개의 파일들을 반드시 선택해주세요.\n\nDownloadLocal.pack',
+                                        QMessageBox.Ok)
+                game_files_dir = select_dir("Select a folder of game files", initial_dir)
+                if game_files_dir:
+                    QMessageBox.warning(self, '컴파일 작업', '수정하신 모든 파일들을 DownloadLocal 폴더 속에 붙여넣어주세요.\n안그러면 적용되지 않습니다.',
+                                        QMessageBox.Ok)
+                    self.progressBar.setValue(20)
+                    QMessageBox.information(self, 'PACK 컴파일 시작하기', 'PACK 컴파일을 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
+                                        QMessageBox.Ok)
+                    if country_code == "jp":
+                        jp = "y"
+                    else:
+                        jp = "n"
+                    
+                    
+                    check_and_create_dir(output_path)
+                    list_data = create_list_encrypt(game_files_dir)
+                    self.progressBar.setValue(47)
+                    self.add_text("Creating encryption list...")
+                    list_data_full = add_extra_bytes(None, False, list_data.encode("utf-8"))
+                    self.add_text("Adding extra bytes...")
+                    self.progressBar.setValue(60)
+                    encrypted_data_list = encrypt_list(list_data_full)
+                    ls_output = os.path.join(output_path, name + ".list")
+                    write_file_b(ls_output, encrypted_data_list)
+                    self.add_text("Writing bytes..")
+                    self.progressBar.setValue(71)
+                    pack_data = create_pack(game_files_dir, list_data, jp, name, country_code)
+                    pk_output = os.path.join(output_path, name + ".pack")
+                    write_file_b(pk_output, bytes(pack_data))
+                    self.add_text("Completed Encryption.")
+                    self.progressBar.setValue(100)
+                    QMessageBox.information(self, '성공', '다음 파일들을 모두 컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [encrypted_files]'.format(game_files_dir),
+                                        QMessageBox.Ok)
+                    self.progressBar.setValue(0)
         
     def make_ipa(self):
         initial_dir = ""
@@ -560,30 +606,15 @@ class WindowClass2(QMainWindow, form_class) :
                 self.progressBar.setValue(0)
 
     def make_apk(self):
-        initial_dir = ""
-        country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
-        
-        if ok:
-            if country_code == "jp":
-                county_code = ""
-            pack_paths = select_dir("apk-extracted 폴더를 선택해주세요.", initial_dir)
-            if pack_paths:
-                source_file1 = 'encrypted_files\\DownloadLocal.list'
-                source_file2 = 'encrypted_files\\DownloadLocal.pack'
-                destination_directory = os.path.join(pack_paths, "assets\\")
-                shutil.copy(source_file1, destination_directory)
-                shutil.copy(source_file2, destination_directory)
-                self.add_text("Preparing Zip...")
-                self.progressBar.setValue(45)
-                folder_path = destination_directory
-                zip_path = 'jp.co.ponos.battlecats{}_MOD_Pulservice.apk'.format(country_code)
-                self.add_text("Compressing and Converting...")
-                zip_folder(folder_path, zip_path)
-                self.add_text("Completed Compression.")
-                self.progressBar.setValue(100)
-                QMessageBox.information(self, '성공', '현재 폴더에 앱 파일을 생성하였습니다.\n\n{}'.format(zip_path),
-                                            QMessageBox.Ok)
-                self.progressBar.setValue(0)
+        QMessageBox.information(self, '안내', '1. encrypted_files 폴더 안의 [DownloadLocal.pack, DownloadLocal.list] 파일 2개를 apk폴더 속의 assets 폴더 속에 덮어씌워주세요.\n\n2. 동봉된 툴인 APKToolGUI를 실행하여, Compile 버튼 옆 ... 버튼을 눌러 폴더를 선택 후, 컴파일해주세요.',
+                                        QMessageBox.Ok)
+
+
+    def CatsEditorConnect(self):
+        self.w = WindowClass()
+        self.w.show()
+    
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv) 

@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>792</width>
-    <height>821</height>
+    <height>872</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>냥코대전쟁 모딩 에디터</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QLabel" name="label">
@@ -194,7 +194,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>630</y>
+      <y>670</y>
       <width>691</width>
       <height>23</height>
      </rect>
@@ -249,8 +249,8 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>690</y>
-      <width>651</width>
+      <y>740</y>
+      <width>691</width>
       <height>111</height>
      </rect>
     </property>
@@ -262,13 +262,65 @@
     <property name="geometry">
      <rect>
       <x>49</x>
-      <y>659</y>
+      <y>700</y>
       <width>651</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;로그 &amp;amp; 진행상황&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="catseditorbtn">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>610</y>
+      <width>151</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>캐릭터 에디터 (미완성)</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="enemyeditorbtn">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>610</y>
+      <width>151</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>적 캐릭터 에디터</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="stageeditorbtn">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>610</y>
+      <width>151</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>스테이지 에디터</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="otherseditorbtn">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>610</y>
+      <width>151</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>기타 에디터</string>
     </property>
    </widget>
   </widget>
