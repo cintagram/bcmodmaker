@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>754</width>
+    <height>844</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>냥코대전쟁 모딩 에디터 기타 편집기</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QToolBox" name="toolBox">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>20</y>
+      <width>711</width>
+      <height>521</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <stylestrategy>PreferDefault</stylestrategy>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="page">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>711</width>
+       <height>461</height>
+      </rect>
+     </property>
+     <attribute name="label">
+      <string>아이템 상점 (itemShopData.tsv)</string>
+     </attribute>
+     <widget class="QPushButton" name="itemshopapply">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>410</y>
+        <width>691</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>적용하기!</string>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>9</y>
+        <width>691</width>
+        <height>381</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>아이템 상점</string>
+      </property>
+      <widget class="QTableWidget" name="itemshoptable">
+       <property name="geometry">
+        <rect>
+         <x>140</x>
+         <y>30</y>
+         <width>401</width>
+         <height>331</height>
+        </rect>
+       </property>
+       <property name="rowCount">
+        <number>14</number>
+       </property>
+       <property name="columnCount">
+        <number>2</number>
+       </property>
+       <row>
+        <property name="text">
+         <string>스피드업</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>트레져레이더</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>고양이 도령</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>야옹컴</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>고양이 박사</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>스냥이퍼</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>경험치A</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>경험치B</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>경험치C</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>경험치D</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>경험치E</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>고양이 드링크A</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>고양이 드링크B</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>고양이 드링크C</string>
+        </property>
+       </row>
+       <column>
+        <property name="text">
+         <string>아이템 가격</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>드롭 갯수</string>
+        </property>
+       </column>
+      </widget>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page_2">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>711</width>
+       <height>461</height>
+      </rect>
+     </property>
+     <attribute name="label">
+      <string>Page 2</string>
+     </attribute>
+    </widget>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

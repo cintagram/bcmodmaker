@@ -14,6 +14,7 @@ import time
 import hashlib
 import pandas as pd
 from pathlib import Path
+import numpy as np
 import base64
 import ctypes, sys
 import sys
@@ -26,11 +27,19 @@ from tkinter import filedialog as fd
 import subprocess
 import hashlib
 import math
+import decrypt_pack
+import encrypt_pack
+import csv
+import helper
+from helper import *
 
 output_path = "game_files"
 lists_paths = "decrypted_lists"
 form_class = uic.loadUiType("libs\\firstmenu.ui")[0]
 form_class2 = uic.loadUiType("libs\\uniteditdialog.ui")[0]
+form_class3 = uic.loadUiType("libs\\otherseditdialog.ui")[0]
+#pyinstaller -F -w -i "icon.ico" --add-data="C:\bcmodmaker\bcmodmaker\decrypt_pack.py;decrypt_pack.py" --add-data="C:\bcmodmaker\bcmodmaker\encrypt_pack.py;encrypt_pack.py" --add-data="C:\bcmodmaker\bcmodmaker\helper.py;helper.py" main.py
+
 
 def zip_folder(folder_path, zip_path):
     # Create a ZIP file object
@@ -51,264 +60,127 @@ def zip_folder(folder_path, zip_path):
     # Close the ZIP file
     zipf.close()
 
-def insert_list(main, list, index):
-    for i in range(len(list)):
-        main[index+i] = list[i]
-    return main
-
-def encrypt_file(file_data, jp, pk_name, country_code):
-    aes_mode = AES.MODE_CBC
-    if jp:
-        key = bytes.fromhex("d754868de89d717fa9e7b06da45ae9e3")
-        iv = bytes.fromhex("40b2131a9f388ad4e5002a98118f6128")
-    elif country_code == "en":
-        key = bytes.fromhex("0ad39e4aeaf55aa717feb1825edef521")
-        iv = bytes.fromhex("d1d7e708091941d90cdf8aa5f30bb0c2")
-    elif country_code == "kr":
-        key = bytes.fromhex("bea585eb993216ef4dcb88b625c3df98")
-        iv = bytes.fromhex("9b13c2121d39f1353a125fed98696649")
-    
-    
-    if "server" in pk_name.lower():
-        key = md5_str("battlecats")
-        iv = None
-        aes_mode = AES.MODE_ECB
-    if iv:
-        cipher = AES.new(key, aes_mode, iv)
-    else:
-        cipher = AES.new(key, aes_mode)
-    encrypted_data = cipher.encrypt(file_data)
-    return encrypted_data
-
-def encrypt_list(list_data):
-    key = md5_str("pack")
-    cipher = AES.new(key, AES.MODE_ECB)
-    encrypted_data = cipher.encrypt(list_data)
-    return encrypted_data
-
-def create_pack(game_files_dir, ls_data, jp, pk_name, country_code):
-    split_data = parse_csv_file(None, ls_data.split("\n"), 3)
-    pack_data = [0] * (int(split_data[-1][1]) + int(split_data[-1][2]))
-    
-    for i in range(len(split_data)):
-        file = split_data[i]
-
-        name = file[0]
-        start_offset = int(file[1])
-
-        file_data = open_file_b(os.path.join(game_files_dir, name))
-        if "imagedatalocal" in pk_name.lower():
-            encrypted_data = file_data
-        else:
-            encrypted_data = encrypt_file(file_data, jp, pk_name, country_code)
-        encrypted_data = list(encrypted_data)
-        pack_data = insert_list(pack_data, encrypted_data, start_offset)
+def TSVEdit(filename: str, row_index: int, column_index: int, new_value: str):
         
-    return pack_data
+    with open(filename, 'r', newline='') as tsvfile:
+        reader = csv.reader(tsvfile, delimiter='\t')
+        rows = list(reader)
 
-def select_dir(title, initial_dir):
-    path = fd.askdirectory(title=title, initialdir=initial_dir)
-    return path
+    rows[row_index][column_index] = new_value
 
-def str_to_gv(game_version: str):
-        split_gv = game_version.split(".")
-        if len(split_gv) == 2:
-            split_gv.append("0")
-        final = ""
-        for split in split_gv:
-            final += split.zfill(2)
+    with open(filename, 'w', newline='') as tsvfile:
+        writer = csv.writer(tsvfile, delimiter='\t')
+        writer.writerows(rows)
 
-        return final.lstrip("0")
-
-def find_lists(pack_paths):
-    files = []
-    for pack_path in pack_paths:
-        directory = os.path.dirname(pack_path)
-        ls_path = os.path.join(directory, pack_path.rstrip(".pack") + ".list")
-        group = {"pack" : pack_path, "list" : ls_path}
-        files.append(group)
-    return files
-
-def add_extra_bytes(path, overwrite=True, data=None, extra=False):
-    if not data:
-        data = open_file_b(path)
-    data = list(data)
-    rem = math.ceil(len(data) / 16)
-    rem *= 16
-    rem -= len(data)
-    
-    if rem != 16:
-        for i in range(rem):
-            data.append(rem)
-    data = bytes(data)
-    if overwrite:
-        write_file_b(path, data)
-    if extra:
-        return rem
-    else:
-        return data
-
-def filter_list(data : list, black_list : list):
-    trimmed_data = data
-    for i in range(len(data)):
-        item = data[i]
-        for banned in black_list:
-            if banned in item:
-                index = item.index(banned)
-                item = item[:index]
-                trimmed_data[i] = item
-    return trimmed_data
-
-def create_list_decrypt(list, index=True, extra_values=None, offset=None, color=True):
-    output = ""
-    for i in range(len(list)):
-        if index:
-            output += f"{i+1}. &{list[i]}&"
-        else:
-            output += str(list[i])
-        if extra_values:
-            if offset != None:
-                output += f" &:& {extra_values[i]+offset}"
-            else:
-                output += f" &:& {extra_values[i]}"
-        output += "\n"
-    output = output.removesuffix("\n")
-
-def create_list_encrypt(game_files_dir):
-    #return open("decrypted_lists/DataLocal.list", "r").read()
-    list_of_files = glob.glob(game_files_dir + '/*')
-    files_with_size = [(file_path, os.stat(file_path).st_size) 
-                    for file_path in list_of_files ]
-    files = files_with_size
-    list_file = f"{len(files_with_size)}\n"
-    address = 0
-    for i in range(len(files_with_size)):
-        file = files_with_size[i]
-        if file[1] % 16 != 0:
-            extra = add_extra_bytes(file[0], extra=True)
-            file = (file[0], file[1] + extra)
-            files[i] = file
+def TSVRead(filename: str, row_index: int, column_index: int):
         
-        list_file += f"{os.path.basename(file[0])},{address},{file[1]}\n"
-        address += file[1]
-    return list_file
-
-def parse_csv_file(path, lines=None, min_length=0, black_list=None):
-    if not lines:
-        lines = open(path, "r", encoding="utf-8").readlines()
-    data = []
-    for line in lines:
-        line_data = line.split(",")
-        if len(line_data) < min_length:
-            continue
-        if black_list:
-            line_data = filter_list(line_data, black_list)
-
-        data.append(line_data)
-    return data
-
-def write_csv_file(path, data):
-    final = ""
-    for row in data:
-        for item in row:
-            final += f"{item},"
-        final += "\n"
-    write_file_b(path, final.encode("utf-8"))
-    add_extra_bytes(path)
-
-def write_file_b(path, data):
-    open(path, "wb").write(data)
-
-def unpack_pack(pk_file_path, ls_data, jp, base_path, country_code):
-    list_data = ls_data.decode("utf-8")
-    split_data = parse_csv_file(None, list_data.split("\n"), 3)
-
-    pack_data = open_file_b(pk_file_path)
-
+    with open(filename, 'r', newline='') as tsvfile:
+        reader = csv.reader(tsvfile, delimiter='\t')
+        rows = list(reader)
+        return str(rows[row_index][column_index])
     
-    for i in range(len(split_data)):
-        file = split_data[i]
+
+
+class WindowClass3(QMainWindow, form_class3) :
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.setWindowIcon(QIcon('libs\\icon.png'))
+        self.itemshopset()
+        self.itemshopapply.clicked.connect(self.itemshopupdate)
         
-        name = file[0]
-        start_offset = int(file[1])
-        length = int(file[2])
+    def itemshopset(self):
+        self.itemshoptable.setItem(0, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 1, 3)))
+        self.itemshoptable.setItem(1, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 2, 3)))
+        self.itemshoptable.setItem(2, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 3, 3)))
+        self.itemshoptable.setItem(3, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 4, 3)))
+        self.itemshoptable.setItem(4, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 5, 3)))
+        self.itemshoptable.setItem(5, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 6, 3)))
+        self.itemshoptable.setItem(6, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 7, 3)))
+        self.itemshoptable.setItem(7, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 8, 3)))
+        self.itemshoptable.setItem(8, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 9, 3)))
+        self.itemshoptable.setItem(9, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 10, 3)))
+        self.itemshoptable.setItem(10, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 11, 3)))
+        self.itemshoptable.setItem(11, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 12, 3)))
+        self.itemshoptable.setItem(12, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 13, 3)))
+        self.itemshoptable.setItem(13, 0, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 14, 3)))
+        self.itemshoptable.setItem(0, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 1, 2)))
+        self.itemshoptable.setItem(1, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 2, 2)))
+        self.itemshoptable.setItem(2, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 3, 2)))
+        self.itemshoptable.setItem(3, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 4, 2)))
+        self.itemshoptable.setItem(4, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 5, 2)))
+        self.itemshoptable.setItem(5, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 6, 2)))
+        self.itemshoptable.setItem(6, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 7, 2)))
+        self.itemshoptable.setItem(7, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 8, 2)))
+        self.itemshoptable.setItem(8, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 9, 2)))
+        self.itemshoptable.setItem(9, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 10, 2)))
+        self.itemshoptable.setItem(10, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 11, 2)))
+        self.itemshoptable.setItem(11, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 12, 2)))
+        self.itemshoptable.setItem(12, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 13, 2)))
+        self.itemshoptable.setItem(13, 1, QTableWidgetItem(TSVRead("game_files\\DataLocal\\itemShopData.tsv", 14, 2)))
 
-        pk_chunk = pack_data[start_offset:start_offset+length]
-        base_name = os.path.basename(pk_file_path)
-        if "imagedatalocal" in base_name.lower():
-            pk_chunk_decrypted = pk_chunk
-        else:
-            pk_chunk_decrypted = decrypt_pack(pk_chunk, jp, base_name, country_code)
-        write_file_b(os.path.join(base_path, name), pk_chunk_decrypted)
+    def itemshopupdate(self):
+        data = self.itemshoptable.item(0, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 1, 3, data)
+        data = self.itemshoptable.item(1, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 2, 3, data)
+        data = self.itemshoptable.item(2, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 3, 3, data)
+        data = self.itemshoptable.item(3, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 4, 3, data)
+        data = self.itemshoptable.item(4, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 5, 3, data)
+        data = self.itemshoptable.item(5, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 6, 3, data)
+        data = self.itemshoptable.item(6, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 7, 3, data)
+        data = self.itemshoptable.item(7, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 8, 3, data)
+        data = self.itemshoptable.item(8, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 9, 3, data)
+        data = self.itemshoptable.item(9, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 10, 3, data)
+        data = self.itemshoptable.item(10, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 11, 3, data)
+        data = self.itemshoptable.item(11, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 12, 3, data)
+        data = self.itemshoptable.item(12, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 13, 3, data)
+        data = self.itemshoptable.item(13, 0).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 14, 3, data)
         
-def open_file_b(path):
-    f = open(path, "rb").read()
-    return f
+        data = self.itemshoptable.item(0, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 1, 2, data)
+        data = self.itemshoptable.item(1, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 2, 2, data)
+        data = self.itemshoptable.item(2, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 3, 2, data)
+        data = self.itemshoptable.item(3, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 4, 2, data)
+        data = self.itemshoptable.item(4, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 5, 2, data)
+        data = self.itemshoptable.item(5, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 6, 2, data)
+        data = self.itemshoptable.item(6, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 7, 2, data)
+        data = self.itemshoptable.item(7, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 8, 2, data)
+        data = self.itemshoptable.item(8, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 9, 2, data)
+        data = self.itemshoptable.item(9, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 10, 2, data)
+        data = self.itemshoptable.item(10, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 11, 2, data)
+        data = self.itemshoptable.item(11, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 12, 2, data)
+        data = self.itemshoptable.item(12, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 13, 2, data)
+        data = self.itemshoptable.item(13, 1).text()
+        TSVEdit("game_files\\DataLocal\\itemShopData.tsv", 14, 2, data)
+        QMessageBox.information(self, '성공', '성공적으로 TSV 파일에 적용하였습니다. 변경된 파일의 이름은 다음과 같습니다.\n컴파일시 필요하니 메모해주세요.\n\n[game_files\\DataLocal\\itemShopData.tsv]',
+                                        QMessageBox.Ok)
 
-def unpack_list(ls_file):
-    data = open_file_b(ls_file)
-    key = md5_str("pack")
-    cipher = AES.new(key, AES.MODE_ECB)
-    decrypted_data = cipher.decrypt(data)
-    return decrypted_data
-
-def md5_str(string, length=8):
-    return bytearray(hashlib.md5(string.encode("utf-8")).digest()[:length]).hex().encode("utf-8")
-
-def decrypt_pack(chunk_data, jp, pk_name, country_code):
-    aes_mode = AES.MODE_CBC
-    if jp:
-        key = bytes.fromhex("d754868de89d717fa9e7b06da45ae9e3")
-        iv = bytes.fromhex("40b2131a9f388ad4e5002a98118f6128")
-    elif country_code == "en":
-        key = bytes.fromhex("0ad39e4aeaf55aa717feb1825edef521")
-        iv = bytes.fromhex("d1d7e708091941d90cdf8aa5f30bb0c2")
     
-    elif country_code == "kr":
-        key = bytes.fromhex("bea585eb993216ef4dcb88b625c3df98")
-        iv = bytes.fromhex("9b13c2121d39f1353a125fed98696649")
-    
-    if "server" in pk_name.lower():
-        key = md5_str("battlecats")
-        iv = None
-        aes_mode = AES.MODE_ECB
-    if iv:
-        cipher = AES.new(key, aes_mode, iv)
-    else:
-        cipher = AES.new(key, aes_mode)
-    decrypted_data = cipher.decrypt(chunk_data)
-    return decrypted_data
-
-def validate_bool(string, true="y"):
-    string = string.strip(" ")
-
-    if string.lower() == true:
-        return True
-    else:
-        return False
-
-def ls_to_str(list):
-    val = ""
-    for item in list:
-        val += item
-    return val
-
-def str_to_ls(str):
-    ls = []
-    for char in str:
-        ls.append(char)
-    return ls
-
-def check_and_create_dir(path):
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-def select_files(title, file_types, single=True, default=""):
-    if single:
-        path = fd.askopenfilename(title=title, filetypes=file_types, initialdir=default)
-    else:
-        path = fd.askopenfilenames(title=title, filetypes=file_types, initialdir=default)
-    return path
 
 class WindowClass(QMainWindow, form_class2) :
     def __init__(self):
@@ -328,6 +200,37 @@ class WindowClass(QMainWindow, form_class2) :
         reply = QMessageBox.question(self, '변경사항 적용', '변경사항을 모두 적용하시겠습니까?\n게임 손상 / 또는 법적 조치에 대해 책임지지 않습니다.',
                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         result = str(int(self.unitnumline.text()) + 1).zfill(3)
+        
+        filename = 'game_files\\DataLocal\\unitbuy.csv'
+
+        with open(filename, 'r') as csvfile:
+            lines = csvfile.readlines()
+            if "" in lines[-1]:
+                
+                lines = lines[:-1]
+
+                with open(filename, 'w') as csvfile:
+                    csvfile.writelines(lines)
+
+        df_ub = pd.read_csv("game_files\\DataLocal\\unitbuy.csv", sep = ",", encoding = "utf-8", header=None)
+        df_ub.iloc[int(result)-1, 2] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 3] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 4] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 5] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 6] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 7] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 8] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 9] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 10] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 11] = int(str(self.unitlevelupxp.text()))
+        df_ub.iloc[int(result)-1, 50] = int(str(self.unitleveluplimit.text()))
+        df_ub.iloc[int(result)-1, 51] = int(str(self.unitplusleveluplimit.text()))
+        df_ub.iloc[int(result)-1, 13] = int(str(self.unitgachararity.text()))
+        df_ub.to_csv("game_files\\DataLocal\\unitbuy.csv", index=False, header=None)
+
+        
+
+
         df = pd.read_csv("game_files\\DataLocal\\unit{}.csv".format(result), sep = ",", encoding = "utf-8", header=None)
         df.iloc[0, 0] = int(str(self.healthinput.text()))
         df.iloc[0, 1] = int(str(self.knockbackinput.text()))
@@ -335,14 +238,24 @@ class WindowClass(QMainWindow, form_class2) :
         df.iloc[0, 3] = int(str(self.attackpowerinput.text()))
         df.iloc[0, 4] = int(str(self.attackcooltimeinput.text()))
         df.iloc[0, 6] = int(str(self.gocostinput.text()))
+        df.iloc[0, 7] = int(str(self.gocooltimeinput.text()))
+
         
         df.to_csv("game_files\\DataLocal\\unit{}.csv".format(result), index=False, header=None)
-        QMessageBox.information(self, '성공', '성공적으로 CSV 파일에 적용하였습니다. 변경된 파일의 이름은 다음과 같습니다.\n컴파일시 필요하니 메모해주세요.\n\n[game_files\\DataLocal\\unit{}.csv]'.format(result),
+        QMessageBox.information(self, '성공', '성공적으로 CSV 파일에 적용하였습니다. 변경된 파일의 이름은 다음과 같습니다.\n컴파일시 필요하니 메모해주세요.\n\n[game_files\\DataLocal\\unit{}.csv, game_files\\DataLocal\\unitbuy.csv]'.format(result),
                                         QMessageBox.Ok)
 
 
     def UnitLoad(self):
         result = str(int(self.unitnumline.text()) + 1).zfill(3)
+
+        df_ub = pd.read_csv("game_files\\DataLocal\\unitbuy.csv", sep = ",", encoding = "utf-8", header=None)
+        self.unitlevelupxp.setText(str(int(df_ub.iloc[int(result)-1 , 2])))
+        self.unitleveluplimit.setText(str(int(df_ub.iloc[int(result)-1 , 50])))
+        self.unitplusleveluplimit.setText(str(int(df_ub.iloc[int(result)-1 , 51])))
+        self.unitgachararity.setText(str(int(df_ub.iloc[int(result)-1 , 13])))
+
+
         df = pd.read_csv("game_files\\DataLocal\\unit{}.csv".format(result), sep = ",", encoding = "utf-8", header=None)
         self.healthinput.setText(str(int(df.iloc[0, 0])))
         self.knockbackinput.setText(str(int(df.iloc[0, 1])))
@@ -350,11 +263,14 @@ class WindowClass(QMainWindow, form_class2) :
         self.attackpowerinput.setText(str(int(df.iloc[0, 3])))
         self.attackcooltimeinput.setText(str(int(df.iloc[0, 4])))
         self.gocostinput.setText(str(int(df.iloc[0, 6])))
+        self.gocooltimeinput.setText(str(int(df.iloc[0, 7])))
+        
+        
 
 
 
     def GachaPercentHelpConnect(self):
-        QMessageBox.information(self, '도움말', '이 설정값은 레어등급별 뽑기확률을 설정합니다.\n\n0: 뽑기에서 출현하지 않음\n1: 레어 확률로 출현\n2: 슈퍼 레어 확률로 출현\n3: 울슈레 확률로 출현\n4: 레전드 레어 확률로 출현',
+        QMessageBox.information(self, '도움말', '이 설정값은 레어등급별 뽑기확률을 설정합니다.\n\n0: 뽑기에서 출현하지 않음\n1: EX 확률로 출현\n2: 레어 확률로 출현\n3: 슈퍼 레어 확률로 출현\n4: 울슈레 확률로 출현\n5: 레전드 레어 확률로 출현',
                                         QMessageBox.Ok)
     
 
@@ -385,6 +301,7 @@ class WindowClass2(QMainWindow, form_class):
         self.decompilebtn.clicked.connect(self.decrypt_pack_ui)
         self.compilebtn.clicked.connect(self.encrypt_pack_ui)
         self.catseditorbtn.clicked.connect(self.CatsEditorConnect)
+        self.otherseditorbtn.clicked.connect(self.OthersEditorConnect)
         if not os.path.exists("game_files\\DataLocal"):
             self.catseditorbtn.setDisabled(True)
             self.enemyeditorbtn.setDisabled(True)
@@ -394,7 +311,7 @@ class WindowClass2(QMainWindow, form_class):
             self.catseditorbtn.setDisabled(False)
             self.enemyeditorbtn.setDisabled(True)
             self.stageeditorbtn.setDisabled(True)
-            self.otherseditorbtn.setDisabled(True)
+            self.otherseditorbtn.setDisabled(False)
         
         current_version = "1.0 beta"
         server_version = requests.get("https://github.com/cintagram/bcmodmaker_assets/raw/main/version.txt").text
@@ -438,7 +355,7 @@ class WindowClass2(QMainWindow, form_class):
         self.progressBar.setValue(0)
 
     def extract_ipa(self):
-        pack_paths = select_files(".ipa 파일을 선택해주세요.", [(".ipa", "*.ipa")], False)
+        pack_paths = helper.select_files(".ipa 파일을 선택해주세요.", [(".ipa", "*.ipa")], False)
         if pack_paths:
             self.add_text("Preparing extraction...")
             self.progressBar.setValue(45)
@@ -486,51 +403,30 @@ class WindowClass2(QMainWindow, form_class):
             self.add_text("Country: {}".format(country_code))
             QMessageBox.information(self, '파일 선택 가이드', '파일 선택 창이 뜨면 다음 2개의 파일들을 반드시 선택해주세요. 나머지는 선택입니다.\n\nDataLocal.pack\nDownloadLocal.pack',
                                     QMessageBox.Ok)
-            pack_paths = select_files(".pack 파일을 선택해주세요.", [(".pack", "*.pack")], False)
-            if pack_paths:
-                QMessageBox.information(self, '디컴파일 시작하기', '디컴파일을 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
-                                    QMessageBox.Ok)
-                if country_code == "jp":
-                    jp = "y"
-                else:
-                    jp = "n"
-                jp = validate_bool(jp)
-                check_and_create_dir("game_files")
-                file_groups = find_lists(pack_paths)
-                self.add_text("Finding lists for game files...")
-                self.progressBar.setValue(45)
-                for i in range(len(file_groups)):
-                    file_group = file_groups[i]
+            if country_code == "jp":
+                jp = True
+            elif country_code == "en" or country_code == "kr":
+                jp = False
 
-                    ls_base_name = os.path.basename(file_group["list"])
-                    pk_base_name = os.path.basename(file_group["pack"])
 
-                    name = pk_base_name.rstrip(".pack")
-                    path = os.path.join(output_path, name)
+            decrypt_pack.decrypt(jp, country_code)
 
-                    check_and_create_dir(path)
-                    check_and_create_dir(lists_paths)
 
-                    ls_data = unpack_list(file_group["list"])
-                    write_file_b(os.path.join(lists_paths, ls_base_name), ls_data)
-                    self.add_text("Writing bytes for decryption...")
-                    
-                    unpack_pack(file_group["pack"], ls_data, jp, path, country_code)
-                self.add_text("Completed Decryption.")
-                self.progressBar.setValue(100)
-                QMessageBox.information(self, '디컴파일 성공', '다음 파일들을 모두 디컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [game_files]'.format(pack_paths),
-                                    QMessageBox.Ok)
-                self.progressBar.setValue(0)
-                if not os.path.exists("game_files\\DataLocal"):
-                    self.catseditorbtn.setDisabled(True)
-                    self.enemyeditorbtn.setDisabled(True)
-                    self.stageeditorbtn.setDisabled(True)
-                    self.otherseditorbtn.setDisabled(True)
-                else:
-                    self.catseditorbtn.setDisabled(False)
-                    self.enemyeditorbtn.setDisabled(True)
-                    self.stageeditorbtn.setDisabled(True)
-                    self.otherseditorbtn.setDisabled(True)
+            self.add_text("Completed Decryption.")
+            self.progressBar.setValue(100)
+            QMessageBox.information(self, '디컴파일 성공', '파일들을 모두 디컴파일 완료했습니다.\n\n다음 폴더에 파일들을 저장했습니다. [game_files]',
+                                QMessageBox.Ok)
+            self.progressBar.setValue(0)
+            if not os.path.exists("game_files\\DataLocal"):
+                self.catseditorbtn.setDisabled(True)
+                self.enemyeditorbtn.setDisabled(True)
+                self.stageeditorbtn.setDisabled(True)
+                self.otherseditorbtn.setDisabled(True)
+            else:
+                self.catseditorbtn.setDisabled(False)
+                self.enemyeditorbtn.setDisabled(True)
+                self.stageeditorbtn.setDisabled(True)
+                self.otherseditorbtn.setDisabled(True)
 
     def encrypt_pack_ui(self):
         initial_dir = "game_files"
@@ -540,44 +436,18 @@ class WindowClass2(QMainWindow, form_class):
         self.add_text("Initialized directories.")
         country_code, ok = QInputDialog.getText(self, '국가 입력', '국가 코드를 입력해주세요.\n\n한국판: kr\n영미/글로벌판: en\n일본판: jp')
         if ok:
-            name, ok = QInputDialog.getText(self, '폴더 이름 입력', '컴파일될 파일의 이름 (폴더의 이름)을 입력해주세요.\n\n예시: DownloadLocal / DataLocal')
-            if ok:
-                self.add_text("Country: {}".format(country_code))
-                QMessageBox.information(self, '파일 선택 가이드', '파일 선택 창이 뜨면 다음 2개의 파일들을 반드시 선택해주세요.\n\nDownloadLocal.pack',
-                                        QMessageBox.Ok)
-                game_files_dir = select_dir("Select a folder of game files", initial_dir)
-                if game_files_dir:
-                    QMessageBox.warning(self, '컴파일 작업', '수정하신 모든 파일들을 DownloadLocal 폴더 속에 붙여넣어주세요.\n안그러면 적용되지 않습니다.',
-                                        QMessageBox.Ok)
-                    self.progressBar.setValue(20)
-                    QMessageBox.information(self, 'PACK 컴파일 시작하기', 'PACK 컴파일을 시작합니다.\n응답없음 상태가 되어도 창을 닫지마세요.\n확인을 누르면 시작합니다.',
-                                        QMessageBox.Ok)
-                    if country_code == "jp":
-                        jp = "y"
-                    else:
-                        jp = "n"
-                    
-                    
-                    check_and_create_dir(output_path)
-                    list_data = create_list_encrypt(game_files_dir)
-                    self.progressBar.setValue(47)
-                    self.add_text("Creating encryption list...")
-                    list_data_full = add_extra_bytes(None, False, list_data.encode("utf-8"))
-                    self.add_text("Adding extra bytes...")
-                    self.progressBar.setValue(60)
-                    encrypted_data_list = encrypt_list(list_data_full)
-                    ls_output = os.path.join(output_path, name + ".list")
-                    write_file_b(ls_output, encrypted_data_list)
-                    self.add_text("Writing bytes..")
-                    self.progressBar.setValue(71)
-                    pack_data = create_pack(game_files_dir, list_data, jp, name, country_code)
-                    pk_output = os.path.join(output_path, name + ".pack")
-                    write_file_b(pk_output, bytes(pack_data))
-                    self.add_text("Completed Encryption.")
-                    self.progressBar.setValue(100)
-                    QMessageBox.information(self, '성공', '다음 파일들을 모두 컴파일 완료했습니다.\n{}\n\n다음 폴더에 파일들을 저장했습니다. [encrypted_files]'.format(game_files_dir),
-                                        QMessageBox.Ok)
-                    self.progressBar.setValue(0)
+            if country_code == "jp":
+                jp = True
+            elif country_code == "en" or country_code == "kr":
+                jp = False
+                
+
+            encrypt_pack.encrypt(jp, country_code)
+            self.add_text("Completed Encryption.")
+            self.progressBar.setValue(100)
+            QMessageBox.information(self, '성공', '파일들을 모두 컴파일 완료했습니다.\n\n다음 폴더에 파일들을 저장했습니다. [encrypted_files]',
+                                QMessageBox.Ok)
+            self.progressBar.setValue(0)
         
     def make_ipa(self):
         initial_dir = ""
@@ -612,6 +482,10 @@ class WindowClass2(QMainWindow, form_class):
 
     def CatsEditorConnect(self):
         self.w = WindowClass()
+        self.w.show()
+    
+    def OthersEditorConnect(self):
+        self.w = WindowClass3()
         self.w.show()
     
 

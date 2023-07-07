@@ -1832,7 +1832,7 @@
        <string>캐릭터 레벨업시 XP</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_2">
+     <widget class="QLineEdit" name="unitlevelupxp">
       <property name="geometry">
        <rect>
         <x>160</x>
@@ -1855,7 +1855,7 @@
        <string>캐릭터 레벨업 제한</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_3">
+     <widget class="QLineEdit" name="unitleveluplimit">
       <property name="geometry">
        <rect>
         <x>160</x>
@@ -1878,7 +1878,7 @@
        <string>캐릭터 +레벨업 제한</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_4">
+     <widget class="QLineEdit" name="unitplusleveluplimit">
       <property name="geometry">
        <rect>
         <x>160</x>
@@ -1904,7 +1904,7 @@
        <string>캐릭터 뽑기 확률 설정 (? 버튼 참고)</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_5">
+     <widget class="QLineEdit" name="unitgachararity">
       <property name="geometry">
        <rect>
         <x>232</x>
